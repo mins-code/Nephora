@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
+import { useDiagnostic } from '../context/DiagnosticContext'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -30,10 +31,10 @@ function Icon({ name, filled = false, size = 'text-2xl', className = '' }) {
 export default function UploadPage() {
   const [files, setFiles] = useState([])
   const [dragging, setDragging] = useState(false)
-  const [predicting, setPredicting] = useState(false)
   const [globalError, setGlobalError] = useState(null)
   const inputRef = useRef(null)
   const navigate = useNavigate()
+  const { setVisits } = useDiagnostic()
 
   /* ── helpers ─────────────────────────────────────────────────────────── */
   const updateFile = (id, patch) =>
@@ -88,116 +89,44 @@ export default function UploadPage() {
   const setDate = (id, date) => updateFile(id, { visitDate: date, autoExtracted: false })
 
   /* ── Drag-and-drop ────────────────────────────────────────────────────── */
-  const onDragOver  = e => { e.preventDefault(); setDragging(true) }
-  const onDragLeave = ()  => setDragging(false)
-  const onDrop      = e  => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files) }
-  const onPickFile  = e  => addFiles(e.target.files)
+  const onDragOver = e => { e.preventDefault(); setDragging(true) }
+  const onDragLeave = () => setDragging(false)
+  const onDrop = e => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files) }
+  const onPickFile = e => addFiles(e.target.files)
 
   /* ── Derived state ───────────────────────────────────────────────────── */
-  const allDone    = files.length > 0 && files.every(f => f.status === 'done' || f.status === 'error')
-  const allDated   = files.length > 0 && files.every(f => f.visitDate !== '')
-  const canAnalyse = allDone && allDated && !predicting
+  const allDone = files.length > 0 && files.every(f => f.status === 'done' || f.status === 'error')
+  const allDated = files.length > 0 && files.every(f => f.visitDate !== '')
+  const canAnalyse = allDone && allDated
 
-  /* ── Analyse: sort → build visits → POST /predict → navigate ─────────── */
-  const handleAnalyse = async () => {
+  /* ── Analyse: sort → store in context → navigate to /analysis ───────────── */
+  const handleAnalyse = () => {
     setGlobalError(null)
-    setPredicting(true)
-    try {
-      // Sort chronologically by visitDate
-      const sorted = [...files].sort((a, b) => a.visitDate.localeCompare(b.visitDate))
-
-      // Build the visits list for /predict
-      const visits = sorted.map(({ visitDate, extractedData }) => {
-        const visit = { visit_date: visitDate }
-        if (extractedData?.found) {
-          Object.entries(extractedData.found).forEach(([biomarker, info]) => {
-            visit[biomarker]           = info.value
-            visit[`${biomarker}_ref_low`]  = info.ref_low
-            visit[`${biomarker}_ref_high`] = info.ref_high
-          })
-        }
-        return visit
-      })
-
-      const { data: prediction } = await axios.post(`${API_BASE}/predict`, { visits })
-
-      // Navigate to results page, passing all data via router state
-      navigate('/results', {
-        state: {
-          prediction,
-          visits: sorted.map((f, i) => ({
-            visitDate: f.visitDate,
-            extractedData: f.extractedData,
-            visitPayload: visits[i],
-          })),
-        },
-      })
-    } catch (err) {
-      const detail = err?.response?.data?.detail
-      const msg = typeof detail === 'string'
-        ? detail
-        : Array.isArray(detail)
-          ? detail.map(d => d?.msg || JSON.stringify(d)).join('; ')
-          : 'Prediction failed. Is the backend running?'
-      setGlobalError(msg)
-      setPredicting(false)
-    }
+    const sorted = [...files].sort((a, b) => a.visitDate.localeCompare(b.visitDate))
+    const visits = sorted.map(({ visitDate, extractedData }) => {
+      const visit = { visit_date: visitDate }
+      if (extractedData?.found) {
+        Object.entries(extractedData.found).forEach(([biomarker, info]) => {
+          visit[biomarker] = info.value
+          visit[`${biomarker}_ref_low`] = info.ref_low
+          visit[`${biomarker}_ref_high`] = info.ref_high
+        })
+      }
+      return visit
+    })
+    const sortedVisitsState = sorted.map((f, i) => ({
+      visitDate: f.visitDate,
+      extractedData: f.extractedData,
+      visitPayload: visits[i],
+    }))
+    setVisits(sortedVisitsState)
+    navigate('/analysis', { state: { visits: sortedVisitsState } })
   }
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen text-on-background font-sans flex flex-col items-center justify-start pt-28 pb-24 px-6 relative">
 
-      {/* ── Back Button ─────────────────────────────────────────────────── */}
-      <div className="absolute top-8 left-8">
-        <Link 
-          to="/" 
-          className="group flex items-center gap-2 px-4 py-2 rounded-xl glass-stroke-thin transition-all duration-300 hover:bg-white/5 hover:border-primary/40"
-          style={{ background: 'rgba(26, 32, 36, 0.4)', backdropFilter: 'blur(10px)' }}
-        >
-          <Icon name="arrow_back" size="text-lg" className="text-outline group-hover:text-primary transition-colors" />
-          <span className="text-label-sm text-outline group-hover:text-primary transition-colors font-medium">Back to Home</span>
-        </Link>
-      </div>
-
-      {/* Loading overlay */}
-      {predicting && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-          style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', background: 'rgba(9,15,19,0.75)' }}
-        >
-          <div className="relative flex items-center justify-center mb-10">
-            <div className="absolute w-40 h-40 rounded-full animate-ping"
-              style={{ background: 'rgba(157,206,225,0.12)', animationDuration: '1.6s' }} />
-            <div className="absolute w-28 h-28 rounded-full animate-ping"
-              style={{ background: 'rgba(148,211,190,0.12)', animationDuration: '2s', animationDelay: '0.3s' }} />
-            <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg,rgba(157,206,225,0.15),rgba(148,211,190,0.1))',
-                border: '1px solid rgba(157,206,225,0.25)',
-                boxShadow: '0 0 60px rgba(157,206,225,0.3)',
-              }}>
-              <span className="material-symbols-outlined text-6xl text-primary animate-pulse"
-                style={{ fontVariationSettings: "'FILL' 1", animationDuration: '1.2s' }}>
-                biotech
-              </span>
-            </div>
-          </div>
-          <p className="text-headline-md font-semibold text-on-surface mb-3"
-            style={{ textShadow: '0 0 30px rgba(157,206,225,0.4)' }}>
-            Synthesizing Biometric Trajectories
-          </p>
-          <p className="text-body-md text-outline mb-8">
-            Running risk prediction across {files.length} visit{files.length > 1 ? 's' : ''}…
-          </p>
-          <div className="flex items-center gap-2">
-            {[0,1,2,3,4].map(i => (
-              <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
-                style={{ background: i % 2 === 0 ? '#9dcee1' : '#94d3be', animationDelay: `${i * 0.12}s`, animationDuration: '0.9s' }} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Page heading */}
       <div className="w-full max-w-3xl mb-10 text-center">
@@ -274,9 +203,9 @@ export default function UploadPage() {
                 style={{ background: 'rgba(157,206,225,0.1)' }}>
                 {status === 'loading'
                   ? <svg className="w-5 h-5 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
                   : status === 'error'
                     ? <Icon name="error" size="text-lg" className="text-error" />
                     : <Icon name="picture_as_pdf" size="text-lg" className="text-primary" />
@@ -289,13 +218,13 @@ export default function UploadPage() {
                 <p className="text-label-sm mt-0.5" style={{
                   color: status === 'error' ? '#ffb4ab'
                     : status === 'loading' ? '#8a9296'
-                    : status === 'done'    ? '#94d3be'
-                    : '#41484b'
+                      : status === 'done' ? '#94d3be'
+                        : '#41484b'
                 }}>
                   {status === 'loading' && 'Extracting biomarkers…'}
-                  {status === 'error'   && (errorMsg || 'Extraction failed')}
-                  {status === 'done'    && 'Extracted ✓'}
-                  {status === 'idle'    && 'Pending…'}
+                  {status === 'error' && (errorMsg || 'Extraction failed')}
+                  {status === 'done' && 'Extracted ✓'}
+                  {status === 'idle' && 'Pending…'}
                 </p>
               </div>
 
