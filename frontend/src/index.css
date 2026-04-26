@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts loaded via index.html ─── */
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { color-scheme: dark; }
+
+  body {
+    @apply bg-background text-on-background font-sans;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root { min-height: 100svh; }
+}
+
+@layer components {
+  /* Glassmorphism stroke */
+  .glass-stroke-thin {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Glass card base */
+  .glass-card {
+    @apply backdrop-blur-xl glass-stroke-thin;
+    background: rgba(26, 32, 36, 0.6);
+  }
+
+  /* Glow effects */
+  .glow-effect-cyan {
+    box-shadow: 0 0 30px rgba(157, 206, 225, 0.3),
+                0 0 60px rgba(157, 206, 225, 0.1);
+  }
+  .glow-effect-green {
+    box-shadow: 0 0 30px rgba(148, 211, 190, 0.3),
+                0 0 60px rgba(148, 211, 190, 0.1);
+  }
+  .glow-effect-lavender {
+    box-shadow: 0 0 30px rgba(203, 190, 251, 0.3),
+                0 0 60px rgba(203, 190, 251, 0.1);
+  }
+
+  /* Text glow */
+  .glow-text-lavender {
+    text-shadow: 0 0 40px rgba(203, 190, 251, 0.5),
+                 0 0 80px rgba(157, 206, 225, 0.2),
+                 0 0 120px rgba(148, 211, 190, 0.1);
+  }
+  .glow-text-cyan {
+    text-shadow: 0 0 20px rgba(157, 206, 225, 0.6),
+                 0 0 40px rgba(157, 206, 225, 0.3);
+  }
+
+  /* Volumetric background fog */
+  .fog-gradient {
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba(148, 211, 190, 0.06) 0%,
+      rgba(157, 206, 225, 0.06) 40%,
+      transparent 70%
+    );
+  }
+
+  /* Navigation island */
+  .nav-island {
+    @apply fixed inset-x-0 z-50 flex items-center justify-between px-8 h-16;
+    @apply backdrop-blur-2xl rounded-2xl;
+    @apply mx-auto w-[95%] max-w-7xl mt-6;
+    background: rgba(9, 15, 19, 0.7);
+    border: 1px solid rgba(157, 206, 225, 0.12);
+    box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6),
+                0 0 0 1px rgba(255,255,255,0.04) inset;
+  }
+
+  /* Primary CTA button */
+  .btn-primary {
+    @apply relative px-8 py-4 rounded-xl overflow-hidden;
+    @apply transition-all duration-300;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+  }
+  .btn-primary:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 30px rgba(245,158,11,0.2);
+  }
+}

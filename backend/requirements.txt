@@ -1,0 +1,11 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+PyMuPDF==1.23.8
+pydantic==2.5.3
+numpy
+pandas
+scikit-learn==1.6.1
+xgboost
+shap
+joblib
