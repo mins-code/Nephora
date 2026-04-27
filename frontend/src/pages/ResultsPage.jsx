@@ -122,7 +122,9 @@ export default function ResultsPage() {
               const isPos = value >= 0
               const barW  = (Math.abs(value) / maxShap) * 100
               const label = feature
-                .replace(/^(mean_val_|max_val_|ever_abnormal_)/, '')
+                .replace('mean_val_', 'Mean ')
+                .replace('max_val_', 'Max ')
+                .replace('ever_abnormal_', 'Abnormal ')
                 .replace('creat_slope', 'Creatinine Slope')
               return (
                 <div key={feature}>
