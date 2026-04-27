@@ -3,11 +3,12 @@ import { createContext, useContext, useState } from 'react'
 const DiagnosticContext = createContext(null)
 
 export function DiagnosticProvider({ children }) {
-  const [visits, setVisits] = useState([])       // sorted extracted visits
+  const [visits, setVisits] = useState([])
   const [prediction, setPrediction] = useState(null)
+  const [scanSeen, setScanSeen] = useState(false)   // scanner shown at most once
 
   return (
-    <DiagnosticContext.Provider value={{ visits, setVisits, prediction, setPrediction }}>
+    <DiagnosticContext.Provider value={{ visits, setVisits, prediction, setPrediction, scanSeen, setScanSeen }}>
       {children}
     </DiagnosticContext.Provider>
   )
