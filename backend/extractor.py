@@ -57,11 +57,18 @@ INLINE_RE = re.compile(
 )
 # Date patterns: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, DD-MMM-YYYY, DD MMM YYYY
 DATE_RE = re.compile(
-    r'\b(?:'
+    r'(?:^|\s|[:\-])(?:'
     r'(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})'          # DD/MM/YYYY or DD-MM-YYYY
     r'|(\d{4})[\-/](\d{2})[\-/](\d{2})'              # YYYY-MM-DD
-    r'|(\d{1,2})[\-\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\-\s](\d{4})'  # DD-MMM-YYYY
-    r')\b',
+    r'|(\d{1,2})[\-\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\-\s](\d{4})'  # DD-MMM-YYYY
+    r')(?:\s|$|[:\-])',
+    re.IGNORECASE
+)
+
+# Regex to find specific contextual dates like "Registered On : 01-Oct-2025"
+CONTEXT_DATE_RE = re.compile(
+    r'(?:Registered\s*On|Collected\s*On|Reported\s*On|Date)\s*[:\-]?\s*'
+    r'(?:(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})|(\d{4})[\-/](\d{2})[\-/](\d{2})|(\d{1,2})[\-\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\-\s](\d{4}))',
     re.IGNORECASE
 )
 
@@ -70,7 +77,6 @@ MONTH_MAP = {
     'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
     'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
 }
-
 
 class CKDExtractor:
     def __init__(self):
@@ -83,22 +89,6 @@ class CKDExtractor:
     def extract_from_pdf(self, pdf_path: str) -> Dict:
         """
         Main entry point. Returns dict with 8 biomarkers or fewer if not found.
-        
-        Returns:
-        {
-          "success": True,
-          "found": {
-            "Creatinine": {
-              "value": 3.38,
-              "unit": "mg/dl",
-              "ref_low": 0.7,
-              "ref_high": 1.2,
-              "ref_raw": "0.7 - 1.2"
-            },
-            ...
-          },
-          "missing": ["Bicarbonate", "Calcium"]  # biomarkers not found in this report
-        }
         """
         try:
             doc = fitz.open(pdf_path)
@@ -106,6 +96,10 @@ class CKDExtractor:
             for page in doc:
                 all_text += page.get_text() + "\n"
             doc.close()
+
+            print(f"\n--- EXTRACTED TEXT FROM {pdf_path} ---")
+            print(all_text)
+            print("---------------------------------------\n")
 
             found = {}
             
@@ -119,15 +113,9 @@ class CKDExtractor:
             
             missing_final = [b for b in BIOMARKER_ALIASES if b not in found]
             
-            # Extract date from first page text
-            first_page_text = ""
-            try:
-                doc2 = fitz.open(pdf_path)
-                first_page_text = doc2[0].get_text()
-                doc2.close()
-            except Exception:
-                pass
-            extracted_date = self._extract_date(first_page_text or all_text)
+            # Extract date from the entire text to avoid issues with split pages
+            # and PyMuPDF text block ordering anomalies
+            extracted_date = self._extract_date(all_text)
 
             return {
                 "success": True,
@@ -140,22 +128,30 @@ class CKDExtractor:
 
     def _extract_date(self, text: str) -> Optional[str]:
         """
-        Scans text for common date formats and returns the first match
-        as an ISO string YYYY-MM-DD, or None.
+        Scans text for common date formats, preferring 'Registered On' or 'Collected On',
+        and returns the first match as an ISO string YYYY-MM-DD, or None.
         """
-        match = DATE_RE.search(text)
+        # Try context specific match first
+        match = CONTEXT_DATE_RE.search(text)
+        if not match:
+            # Fallback to any date
+            match = DATE_RE.search(text)
+            
         if not match:
             return None
+            
         try:
             g = match.groups()
-            # Group 1-3: DD/MM/YYYY or DD-MM-YYYY
+            # If matched by CONTEXT_DATE_RE, groups are shifted depending on the regex OR
+            # Actually CONTEXT_DATE_RE has 9 groups exactly like DATE_RE
             if g[0] and g[1] and g[2]:
-                day, month, year = g[0].zfill(2), g[1].zfill(2), g[2]
-                return f"{year}-{month}-{day}"
-            # Group 4-6: YYYY-MM-DD
+                val1, val2, year = int(g[0]), int(g[1]), g[2]
+                if val1 > 12: month, day = val2, val1
+                elif val2 > 12: month, day = val1, val2
+                else: day, month = val1, val2 # Default DD/MM/YYYY
+                return f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
             elif g[3] and g[4] and g[5]:
                 return f"{g[3]}-{g[4]}-{g[5]}"
-            # Group 7-9: DD-MMM-YYYY
             elif g[6] and g[7] and g[8]:
                 day = g[6].zfill(2)
                 month = MONTH_MAP.get(g[7].lower()[:3], '01')

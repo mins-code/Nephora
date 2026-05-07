@@ -139,19 +139,10 @@ export default function UploadPage() {
           Upload Blood Reports
         </h1>
         <p className="text-body-lg text-outline max-w-xl mx-auto">
-          Upload one or more PDF lab reports. Dates are auto-detected — review and confirm before analysing.
+          Upload one or more PDF lab reports. Review and confirm visit dates before analysing.
         </p>
       </div>
 
-      {/* Disclaimer */}
-      <div className="w-full max-w-3xl mb-8 flex items-start gap-3 px-5 py-4 rounded-2xl"
-        style={{ background: 'rgba(203,190,251,0.06)', border: '1px solid rgba(203,190,251,0.2)' }}>
-        <Icon name="info" size="text-lg" className="text-tertiary mt-0.5 flex-shrink-0" />
-        <p className="text-body-md text-on-surface-variant">
-          <span className="text-tertiary font-semibold">Research &amp; Educational Use Only. </span>
-          Not a substitute for professional medical advice. Always consult a qualified nephrologist.
-        </p>
-      </div>
 
       {/* Drop Zone */}
       <div
@@ -181,7 +172,7 @@ export default function UploadPage() {
             {dragging ? 'Drop your PDFs here' : 'Drag & drop PDF reports here'}
           </p>
           <p className="text-body-md text-outline mt-1">
-            or <span className="text-primary underline underline-offset-2">click to browse</span> — dates auto-detected
+            or <span className="text-primary underline underline-offset-2">click to browse</span>
           </p>
         </div>
       </div>
@@ -230,12 +221,6 @@ export default function UploadPage() {
 
               {/* Date picker + auto badge */}
               <div className="flex items-center gap-2 flex-shrink-0">
-                {autoExtracted && (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2 py-1 rounded-full"
-                    style={{ background: 'rgba(148,211,190,0.12)', color: '#94d3be', border: '1px solid rgba(148,211,190,0.25)' }}>
-                    <span>●</span> Auto-detected
-                  </span>
-                )}
                 <input
                   type="date"
                   value={visitDate}

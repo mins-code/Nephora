@@ -122,9 +122,12 @@ export default function LandingPage() {
                 </span>
               </Link>
 
-              <button className="text-body-md text-outline hover:text-on-surface transition-colors pb-1 border-b border-transparent hover:border-on-surface font-medium">
+              <a 
+                href="#how-it-works"
+                className="text-body-md text-outline hover:text-on-surface transition-colors pb-1 border-b border-transparent hover:border-on-surface font-medium cursor-pointer"
+              >
                 How it works
-              </button>
+              </a>
             </div>
           </div>
 
@@ -188,89 +191,42 @@ export default function LandingPage() {
         </section>
 
         {/* ── FEATURES GRID ──────────────────────────────────────────────── */}
-        <section className="relative z-10 max-w-7xl mx-auto px-8 mt-32">
-          <div className="grid grid-cols-12 gap-island-gap">
+        <section id="how-it-works" className="relative z-10 max-w-7xl mx-auto px-8 mt-32">
+          <div className="grid grid-cols-12 gap-8">
 
-            <FeatureCard icon="upload_file" title="Multi-Visit PDF Upload"
-              body="Upload multiple blood test reports in PDF format. Our AI extractor identifies Creatinine, BUN, Potassium, Sodium, Hemoglobin, Bicarbonate, Calcium, and Glucose from any lab layout."
-              accent="cyan" />
-
-            <div className="col-span-12 md:col-span-8 relative overflow-hidden glass-card rounded-4xl p-8 flex items-center gap-12 group glass-stroke-thin">
-              <div className="flex-1">
-                <div className="text-label-sm text-tertiary mb-4">Clinical Precision</div>
-                <h3 className="text-headline-lg text-on-surface mb-4">Biomarker Trajectory Analysis</h3>
-                <p className="text-body-md text-outline max-w-md">
-                  Track all 8 kidney biomarkers across multiple visits. Longitudinal slope
-                  analysis — powered by <code className="text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">np.polyfit</code> — reveals
-                  kidney function decline a single snapshot would miss.
-                </p>
+            <div className="col-span-12 md:col-span-4 glass-card rounded-3xl p-8 flex flex-col gap-6 hover:bg-white/5 transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Icon name="upload_file" className="text-primary" />
               </div>
-              <div className="hidden lg:flex flex-col gap-3 w-44 flex-shrink-0">
-                {[
-                  { label: 'Creatinine', w: 82, c: '#9dcee1' },
-                  { label: 'BUN',        w: 58, c: '#94d3be' },
-                  { label: 'Hemoglobin', w: 70, c: '#cbbefb' },
-                  { label: 'Potassium',  w: 40, c: '#9dcee1' },
-                ].map(({ label, w, c }) => (
-                  <div key={label}>
-                    <span className="text-[10px] uppercase tracking-widest" style={{ color: '#8a9296' }}>{label}</span>
-                    <div className="h-1 mt-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${w}%`, background: c }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="col-span-12 md:col-span-7 glass-card rounded-4xl p-10 relative overflow-hidden glass-stroke-thin">
-              <div className="absolute top-0 right-0 p-8 pointer-events-none">
-                <Icon name="monitoring" size="text-8xl" className="opacity-5 text-secondary" />
-              </div>
-              <h3 className="text-headline-lg text-on-surface mb-2">Longitudinal Risk Intelligence</h3>
-              <p className="text-body-md text-outline mb-8">Powered by XGBoost + SHAP — every prediction is explainable.</p>
-              <div className="flex gap-4">
-                {[
-                  { val: '8',       label: 'Biomarkers',     color: '#94d3be' },
-                  { val: 'XGBoost', label: 'ML Engine',      color: '#9dcee1' },
-                  { val: 'SHAP',    label: 'Explainability', color: '#cbbefb' },
-                ].map(({ val, label, color }) => (
-                  <div key={label} className="flex-1 p-4 rounded-xl glass-stroke-thin" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <div className="text-headline-md font-bold" style={{ color }}>{val}</div>
-                    <div className="text-label-sm mt-1 text-outline-variant">{label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="col-span-12 md:col-span-5 rounded-4xl border border-primary/15 p-10 flex flex-col justify-between"
-              style={{ background: 'linear-gradient(135deg,rgba(157,206,225,0.08) 0%,rgba(148,211,190,0.04) 50%,transparent 100%)' }}>
-              <div className="h-0.5 w-16 rounded-full mb-6" style={{ background: 'linear-gradient(90deg,#9dcee1,#94d3be)' }} />
-              <p className="text-body-lg text-on-surface/80 italic leading-relaxed">
-                "Nephora flagged my patient's rising Creatinine slope two visits before
-                our team would have escalated. Explainable AI done right for clinical
-                decision support."
+              <h3 className="text-headline-sm font-bold text-on-surface">Multi-Visit PDF Upload</h3>
+              <p className="text-body-md text-outline">
+                Upload multiple blood test reports in PDF format. Our AI extractor identifies 
+                8 key kidney biomarkers from any lab layout.
               </p>
-              <div className="flex items-center gap-4 mt-8">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center glass-stroke-thin"
-                  style={{ background: 'rgba(157,206,225,0.1)' }}>
-                  <Icon name="person" size="text-base" className="text-primary" />
-                </div>
-                <div>
-                  <div className="text-label-sm text-on-surface">DR. ANANYA KRISHNAN</div>
-                  <div className="text-[10px] uppercase tracking-widest text-outline">Consultant Nephrologist</div>
-                </div>
-              </div>
             </div>
 
-            <FeatureCard icon="science" title="Creatinine Slope Detection"
-              body="np.polyfit-powered trend analysis across visits reveals accelerating kidney decline before levels hit critical thresholds."
-              accent="green" />
-            <FeatureCard icon="auto_awesome" title="SHAP Explainability"
-              body="Every prediction includes a ranked breakdown of which biomarkers contributed most — no black-box decisions in clinical AI."
-              accent="lavender" />
-            <FeatureCard icon="health_metrics" title="Three-Tier Risk Labels"
-              body="Low, Moderate, or High risk with probability %. Clinicians get clear, actionable output rather than opaque scores."
-              accent="cyan" />
+            <div className="col-span-12 md:col-span-4 glass-card rounded-3xl p-8 flex flex-col gap-6 hover:bg-white/5 transition-all duration-300 border-primary/20"
+                 style={{ background: 'linear-gradient(135deg, rgba(157,206,225,0.05) 0%, transparent 100%)' }}>
+              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <Icon name="monitoring" className="text-secondary" />
+              </div>
+              <h3 className="text-headline-sm font-bold text-on-surface">Creatinine Slope Detection</h3>
+              <p className="text-body-md text-outline">
+                np.polyfit-powered trend analysis across visits reveals accelerating kidney 
+                decline before levels hit critical thresholds.
+              </p>
+            </div>
+
+            <div className="col-span-12 md:col-span-4 glass-card rounded-3xl p-8 flex flex-col gap-6 hover:bg-white/5 transition-all duration-300">
+              <div className="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center">
+                <Icon name="auto_awesome" className="text-tertiary" />
+              </div>
+              <h3 className="text-headline-sm font-bold text-on-surface">Three-Tier Risk Labels</h3>
+              <p className="text-body-md text-outline">
+                Low, Moderate, or High risk with probability %. Clinicians get clear, 
+                actionable output rather than opaque scores.
+              </p>
+            </div>
 
           </div>
         </section>
