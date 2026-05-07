@@ -7,6 +7,7 @@ import LandingPage  from './pages/LandingPage'
 import UploadPage   from './pages/UploadPage'
 import AnalysisPage from './pages/AnalysisPage'
 import ResultsPage  from './pages/ResultsPage'
+import InsightPage  from './pages/InsightPage'
 import ChatPage     from './pages/ChatPage'
 
 /* Global background blobs — rendered once, behind everything */
@@ -40,6 +41,7 @@ function AppShell() {
           <Route path="/upload"  element={<UploadPage />}   />
           <Route path="/analysis" element={<AnalysisPage />} />
           <Route path="/results" element={<ResultsPage />}  />
+          <Route path="/insight" element={<InsightPage />}  />
           <Route path="/ai"      element={<ChatPage />}       />
         </Routes>
       </div>

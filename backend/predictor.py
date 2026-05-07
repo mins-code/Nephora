@@ -97,10 +97,24 @@ class CKDPredictor:
             for i, col in enumerate(self.feature_cols)
         }
         
+        # Determine top driver: highest positive SHAP feature → strip prefix for readability
+        positive_shap = {k: v for k, v in shap_dict.items() if v > 0}
+        top_driver_feature = max(positive_shap, key=positive_shap.get) if positive_shap else None
+        top_driver = (
+            top_driver_feature
+            .replace('mean_val_', '')
+            .replace('max_val_', '')
+            .replace('ever_abnormal_', '')
+            .replace('creat_slope', 'Creatinine Slope')
+            if top_driver_feature else None
+        )
+
         return {
             "risk_probability": round(prob * 100, 1),
             "risk_label": "High" if prob > 0.65 else "Moderate" if prob > 0.35 else "Low",
             "risk_color": "red" if prob > 0.65 else "amber" if prob > 0.35 else "green",
             "shap_values": shap_dict,
-            "feature_values": df.iloc[0].to_dict()
+            "feature_values": df.iloc[0].to_dict(),
+            "top_driver": top_driver,
         }
+
