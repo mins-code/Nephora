@@ -12,22 +12,6 @@ export function Icon({ name, filled = false, size = 'text-2xl', className = '' }
   )
 }
 
-function NavLink({ label, active }) {
-  return (
-    <a
-      href="#"
-      className={[
-        'text-label-sm transition-all duration-300',
-        active
-          ? 'text-primary pb-1 border-b-2 border-primary/50'
-          : 'text-outline hover:text-on-surface hover:bg-white/5 px-2 py-1 rounded-lg',
-      ].join(' ')}
-    >
-      {label}
-    </a>
-  )
-}
-
 function FeatureCard({ icon, title, body, accent = 'cyan' }) {
   const colors = {
     cyan:     { icon: 'text-primary',   bg: 'bg-primary/10'   },
@@ -57,12 +41,6 @@ export default function LandingPage() {
         <div className="text-headline-md font-bold tracking-tighter text-primary glow-text-cyan">
           Nephora
         </div>
-        <nav className="hidden md:flex items-center gap-8">
-          <NavLink label="Diagnostics" active />
-          <NavLink label="Biometrics" />
-          <NavLink label="Timeline" />
-          <NavLink label="Reports" />
-        </nav>
         <div className="flex items-center gap-1">
           {['settings_heart', 'query_stats', 'account_circle'].map(ic => (
             <button key={ic} className="p-2 rounded-full text-primary hover:bg-primary/10 transition-all duration-200">

@@ -27,15 +27,15 @@ export default function NetworkView({ biomarkerData, prediction }) {
   const getBg     = n => STATUS[getStatus(n)]?.bg    || 'rgba(255,255,255,0.02)'
 
   const riskPct     = prediction?.risk_probability ?? null
-  const pLabel      = riskPct != null ? (riskPct > 60 ? 'HIGH RISK' : riskPct > 30 ? 'MODERATE' : 'STABLE') : 'PENDING'
+
   const pColor      = riskPct != null ? (riskPct > 60 ? '#ffb4ab' : riskPct > 30 ? '#fbbf24' : '#94d3be') : '#9dcee1'
 
   const abnormals   = BIO_ORDER.filter(b => getStatus(b) === 'abnormal')
   const borderlines = BIO_ORDER.filter(b => getStatus(b) === 'borderline')
   const concerns    = [...abnormals, ...borderlines]
   const aiText      = concerns.length > 0
-    ? `${abnormals.length} marker${abnormals.length !== 1 ? 's' : ''} outside reference range${abnormals.length ? ': ' + abnormals.join(', ') : ''}. ${borderlines.length ? borderlines.length + ' borderline: ' + borderlines.join(', ') + '.' : ''} ${riskPct != null ? 'CKD risk score: ' + riskPct + '%.' : ''} Clinical review recommended.`
-    : `All primary renal biomarkers within reference ranges.${riskPct != null ? ' CKD risk score: ' + riskPct + '%.' : ''} No active progression signal detected.`
+    ? `${abnormals.length} marker${abnormals.length !== 1 ? 's' : ''} outside reference range${abnormals.length ? ': ' + abnormals.join(', ') : ''}. ${borderlines.length ? borderlines.length + ' borderline: ' + borderlines.join(', ') + '.' : ''} Clinical review recommended.`
+    : `All primary renal biomarkers within reference ranges. No active progression signal detected.`
 
   return (
     <div className="flex flex-col rounded-3xl overflow-hidden"
@@ -153,8 +153,6 @@ export default function NetworkView({ biomarkerData, prediction }) {
             fontFamily="'Space Grotesk'" fontWeight="700" letterSpacing="3">PATIENT</text>
           <text x={CX} y={CY+5}  textAnchor="middle" fontSize="13" fill="#e1e3e0"
             fontFamily="'Space Grotesk'" fontWeight="700">NEPHORA</text>
-          <circle cx={CX-20} cy={CY+22} r="3.5" fill={pColor}/>
-          <text x={CX-11} y={CY+27} fontSize="9.5" fill={pColor} fontFamily="'Space Grotesk'" fontWeight="600">{pLabel}</text>
         </svg>
       </div>
 
@@ -168,16 +166,7 @@ export default function NetworkView({ biomarkerData, prediction }) {
           <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-tertiary">Biomarker Pathway Analysis</p>
         </div>
         <p className="text-[13px] text-on-surface-variant leading-relaxed max-w-2xl">{aiText}</p>
-        {riskPct != null && (
-          <div className="mt-4 inline-flex items-center gap-4 px-4 py-3 rounded-2xl"
-            style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)' }}>
-            <span className="text-[10px] font-mono text-outline tracking-widest">CKD_RISK_SCORE</span>
-            <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background:'rgba(255,255,255,0.06)' }}>
-              <div className="h-full rounded-full" style={{ width:`${riskPct}%`, background:`linear-gradient(90deg,${pColor},${pColor}80)`, boxShadow:`0 0 8px ${pColor}60` }}/>
-            </div>
-            <span className="text-[14px] font-mono font-bold" style={{ color:pColor }}>{riskPct}%</span>
-          </div>
-        )}
+
       </div>
 
     </div>
