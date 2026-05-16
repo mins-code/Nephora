@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import axios from 'axios'
 import { useDiagnostic } from '../context/DiagnosticContext'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = ''  // Vite proxy forwards /extract, /predict, /health → http://localhost:8000
 
 function Icon({ name, filled = false, size = 'text-2xl', className = '' }) {
   return (

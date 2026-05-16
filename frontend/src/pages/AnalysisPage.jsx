@@ -5,7 +5,7 @@ import { useDiagnostic } from '../context/DiagnosticContext'
 import FlashcardView from './FlashcardView'
 import NetworkView   from './NetworkView'
 
-const API = 'http://localhost:8000'
+const API = ''  // Vite proxy forwards /extract, /predict, /health → http://localhost:8000
 const BIO_ORDER = ['Creatinine','BUN','Potassium','Sodium','Hemoglobin','Bicarbonate','Calcium','Glucose']
 
 /* ── Scanning overlay ───────────────────────────────────────────────── */

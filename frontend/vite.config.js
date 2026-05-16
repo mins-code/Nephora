@@ -8,5 +8,14 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    proxy: {
+      '/extract': 'http://localhost:8000',
+      '/predict': 'http://localhost:8000',
+      '/health':  'http://localhost:8000',
+      '/chat':    'http://localhost:8000',
+      '/ai':      'http://localhost:8000',
+    }
+  }
 })
 

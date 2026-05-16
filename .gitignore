@@ -1,6 +1,25 @@
+# Python
 venv/
-__pycache__/
-.env
 .venv/
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.DS_Store
+
+# Temporary / OS files
 temp/
+*.log
+
+# Copied old folder
+NephoraChatbot/
