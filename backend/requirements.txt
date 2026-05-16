@@ -9,6 +9,7 @@ scikit-learn==1.6.1
 xgboost
 shap
 joblib
+tensorflow
 # Chatbot / AI dependencies
 langchain
 langchain-community
