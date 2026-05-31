@@ -255,15 +255,19 @@ export default function ResultsPage() {
     )
   }
 
-  const { risk_probability, risk_label, shap_values, feature_values, creat_slope, n_visits, top_driver } = prediction
+  const {
+    risk_probability, risk_label, shap_values, feature_values, creat_slope, n_visits, top_driver,
+    lstm_risk_probability, lstm_risk_label,
+  } = prediction
   const cfg = RISK_CFG[risk_label] || RISK_CFG.Low
+  const lstmCfg = RISK_CFG[lstm_risk_label] || null
 
   const shapEntries = Object.entries(shap_values || {})
     // Deduplicate: filter to show only mean values or specific indicators like slope
     .filter(([feature]) => feature.startsWith('mean_val_') || feature === 'creat_slope')
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
     .slice(0, 8)
-  
+
   const maxShap = Math.max(...shapEntries.map(([, v]) => Math.abs(v)), 0.001)
 
   // Build biomarker map from the most recent visit's extractedData
@@ -307,6 +311,64 @@ export default function ResultsPage() {
               : 'Single visit · longitudinal slope not available'}
           </p>
         </div>
+
+        {/* ── Dual Model Comparison ──────────────────────────────────────── */}
+        <GlassCard className="mb-6">
+          <SectionLabel>AI Model Ensemble</SectionLabel>
+          <h2 className="text-xl font-bold text-on-surface mb-1">Dual-Model Risk Scores</h2>
+          <p className="text-xs text-outline mb-6">
+            XGBoost analyses engineered temporal features; LSTM reads raw visit sequences directly.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            {/* XGBoost Card */}
+            <div className="rounded-2xl p-5 flex flex-col items-center gap-3"
+              style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+              <div className="text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: cfg.color }}>
+                XGBoost · Tabular
+              </div>
+              <div className="flex items-end gap-1" style={{ color: cfg.color }}>
+                <span className="font-black" style={{ fontSize: 52, lineHeight: 1 }}>{risk_probability}</span>
+                <span className="font-bold mb-1.5" style={{ fontSize: 22 }}>%</span>
+              </div>
+              <div className="text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest"
+                style={{ color: cfg.color, background: 'rgba(255,255,255,0.06)', border: `1px solid ${cfg.border}` }}>
+                {risk_label} Risk
+              </div>
+              <p className="text-[10px] text-outline text-center leading-relaxed">
+                Engineered features:<br />mean, max, slope, ever-abnormal
+              </p>
+            </div>
+
+            {/* LSTM Card */}
+            {lstmCfg ? (
+              <div className="rounded-2xl p-5 flex flex-col items-center gap-3"
+                style={{ background: lstmCfg.bg, border: `1px solid ${lstmCfg.border}` }}>
+                <div className="text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: lstmCfg.color }}>
+                  LSTM · Temporal
+                </div>
+                <div className="flex items-end gap-1" style={{ color: lstmCfg.color }}>
+                  <span className="font-black" style={{ fontSize: 52, lineHeight: 1 }}>{lstm_risk_probability}</span>
+                  <span className="font-bold mb-1.5" style={{ fontSize: 22 }}>%</span>
+                </div>
+                <div className="text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest"
+                  style={{ color: lstmCfg.color, background: 'rgba(255,255,255,0.06)', border: `1px solid ${lstmCfg.border}` }}>
+                  {lstm_risk_label} Risk
+                </div>
+                <p className="text-[10px] text-outline text-center leading-relaxed">
+                  Raw sequences:<br />3-visit biomarker trajectory
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl p-5 flex flex-col items-center justify-center gap-3"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <span className="material-symbols-outlined text-3xl text-outline">model_training</span>
+                <p className="text-xs text-outline text-center leading-relaxed">
+                  LSTM model not available.<br />Upload ≥ 3 visits for temporal analysis.
+                </p>
+              </div>
+            )}
+          </div>
+        </GlassCard>
 
         {/* ── Biomarker Health Map ──────────────────────────────────────── */}
         <GlassCard className="mb-6">
