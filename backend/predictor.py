@@ -153,7 +153,15 @@ class CKDPredictor:
         # XGBoost path
         df = self.build_feature_vector(visits)
         X_scaled = self.scaler.transform(df)
-        prob = float(self.model.predict_proba(X_scaled)[0][1])
+        xgb_prob = float(self.model.predict_proba(X_scaled)[0][1])
+
+        # LSTM path
+        lstm_result = self.predict_lstm(visits)
+        if lstm_result and "lstm_risk_probability" in lstm_result:
+            lstm_prob = lstm_result["lstm_risk_probability"] / 100.0
+            final_prob = (0.6 * xgb_prob) + (0.4 * lstm_prob)
+        else:
+            final_prob = xgb_prob
 
         # SHAP explanation
         shap_values = self.explainer.shap_values(X_scaled)
@@ -179,9 +187,9 @@ class CKDPredictor:
         )
 
         result = {
-            "risk_probability": round(prob * 100, 1),
-            "risk_label": "High" if prob > 0.65 else "Moderate" if prob > 0.35 else "Low",
-            "risk_color": "red" if prob > 0.65 else "amber" if prob > 0.35 else "green",
+            "risk_probability": round(final_prob * 100, 1),
+            "risk_label": "High" if final_prob > 0.65 else "Moderate" if final_prob > 0.35 else "Low",
+            "risk_color": "red" if final_prob > 0.65 else "amber" if final_prob > 0.35 else "green",
             "shap_values": shap_dict,
             "feature_values": df.iloc[0].to_dict(),
             "top_driver": top_driver,
@@ -189,13 +197,15 @@ class CKDPredictor:
             "creat_slope": df.iloc[0].get("creat_slope", 0.0),
         }
 
-        # LSTM path (appended to same result dict)
-        lstm_result = self.predict_lstm(visits)
+        # Append LSTM results
         if lstm_result:
             result.update(lstm_result)
         else:
             result["lstm_risk_probability"] = None
             result["lstm_risk_label"] = None
             result["lstm_risk_color"] = None
+
+        # Also store individual XGB probability for reference if needed
+        result["xgb_risk_probability"] = round(xgb_prob * 100, 1)
 
         return result

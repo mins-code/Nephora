@@ -47,10 +47,16 @@ function CircularGauge({ pct, risk_label, risk_probability }) {
           filter="url(#gGlow)"
           style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(0.34,1.56,0.64,1)' }} />
         {/* LOW / HIGH labels at arc endpoints */}
-        <text x="30" y={openY + 16} fill="rgba(34,211,238,0.5)" fontSize="9"
-          fontFamily="monospace" textAnchor="middle">LOW</text>
-        <text x="270" y={openY + 16} fill="rgba(255,107,138,0.5)" fontSize="9"
-          fontFamily="monospace" textAnchor="middle">HIGH</text>
+        <g transform={`translate(35, ${openY + 14})`}>
+          <rect x="-24" y="-10" width="48" height="20" rx="10" fill="rgba(34,211,238,0.1)" stroke="rgba(34,211,238,0.3)" strokeWidth="1" />
+          <text x="0" y="3.5" fill="rgba(34,211,238,0.9)" fontSize="10" fontWeight="800"
+            fontFamily="sans-serif" textAnchor="middle" letterSpacing="0.05em">LOW</text>
+        </g>
+        <g transform={`translate(265, ${openY + 14})`}>
+          <rect x="-24" y="-10" width="48" height="20" rx="10" fill="rgba(255,107,138,0.1)" stroke="rgba(255,107,138,0.3)" strokeWidth="1" />
+          <text x="0" y="3.5" fill="rgba(255,107,138,0.9)" fontSize="10" fontWeight="800"
+            fontFamily="sans-serif" textAnchor="middle" letterSpacing="0.05em">HIGH</text>
+        </g>
       </svg>
 
       {/* Text below arc — zero overlap */}
@@ -257,7 +263,7 @@ export default function ResultsPage() {
 
   const {
     risk_probability, risk_label, shap_values, feature_values, creat_slope, n_visits, top_driver,
-    lstm_risk_probability, lstm_risk_label,
+    lstm_risk_probability, lstm_risk_label, xgb_risk_probability,
   } = prediction
   const cfg = RISK_CFG[risk_label] || RISK_CFG.Low
   const lstmCfg = RISK_CFG[lstm_risk_label] || null
@@ -327,7 +333,7 @@ export default function ResultsPage() {
                 XGBoost · Tabular
               </div>
               <div className="flex items-end gap-1" style={{ color: cfg.color }}>
-                <span className="font-black" style={{ fontSize: 52, lineHeight: 1 }}>{risk_probability}</span>
+                <span className="font-black" style={{ fontSize: 52, lineHeight: 1 }}>{xgb_risk_probability ?? risk_probability}</span>
                 <span className="font-bold mb-1.5" style={{ fontSize: 22 }}>%</span>
               </div>
               <div className="text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest"
