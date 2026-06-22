@@ -4,6 +4,33 @@ import { useDiagnostic } from '../context/DiagnosticContext'
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea, Label
 } from 'recharts'
+import { motion } from 'framer-motion'
+
+const ALL_STAGES = [
+  { stage: "Stage 1", desc: "Normal or High Function", color: "#94d3be", threat: "Low Risk", minEgfr: 90, numericStage: 1 },
+  { stage: "Stage 2", desc: "Mildly Decreased Function", color: "#aee6d1", threat: "Mild Risk", minEgfr: 60, numericStage: 2 },
+  { stage: "Stage 3a", desc: "Mild-to-Moderate Decline", color: "#fbbf24", threat: "Moderate Risk", minEgfr: 45, numericStage: 3 },
+  { stage: "Stage 3b", desc: "Moderate-to-Severe Decline", color: "#f59e0b", threat: "High Risk", minEgfr: 30, numericStage: 4 },
+  { stage: "Stage 4", desc: "Severely Decreased Function", color: "#f87171", threat: "Severe Danger", minEgfr: 15, numericStage: 5 },
+  { stage: "Stage 5", desc: "Kidney Failure (ESRD)", color: "#ffb4ab", threat: "Critical Terminal", minEgfr: -Infinity, numericStage: 6 }
+];
+
+function getCKDStage(egfr) {
+  for (const st of ALL_STAGES) {
+    if (egfr >= st.minEgfr) return st;
+  }
+  return ALL_STAGES[ALL_STAGES.length - 1];
+}
+
+function calculateEgfr(scr, age = 50, gender = 'Male') {
+  if (!scr) return null;
+  const isFemale = gender.toLowerCase() === 'female';
+  const k = isFemale ? 0.7 : 0.9;
+  const alpha = isFemale ? -0.241 : -0.302;
+  const genderMultiplier = isFemale ? 1.012 : 1;
+  const egfr = 142 * Math.pow(Math.min(scr / k, 1), alpha) * Math.pow(Math.max(scr / k, 1), -1.200) * Math.pow(0.9938, age) * genderMultiplier;
+  return Math.round(egfr * 10) / 10;
+}
 
 /* ── Section label ───────────────────────────────────────────────────────── */
 function SectionLabel({ children }) {
@@ -56,16 +83,45 @@ export default function InsightPage() {
     return "This factor has a neutral impact on your current risk."
   }
 
-  // 2. Trajectory Logic
-  const currentGfr = latestFound['GFR']?.value || latestFound['eGFR']?.value || 90
-  const decayRate = 0.03 + (risk_probability / 100) * 0.22
+  // 2. Trajectory & Historical Logic
+  const latestDate = new Date(visits[visits.length - 1]?.visitDate || new Date());
+  
+  const historicalData = visits.map(v => {
+    const vDate = new Date(v.visitDate || new Date());
+    const monthDiff = (vDate.getFullYear() - latestDate.getFullYear()) * 12 + (vDate.getMonth() - latestDate.getMonth());
+    
+    let gfr = v.extractedData?.found?.['eGFR']?.value || v.extractedData?.found?.['GFR']?.value;
+    
+    if (gfr === undefined) {
+      const scr = v.extractedData?.found?.['Creatinine']?.value || v.visitPayload?.['Creatinine'];
+      if (scr !== undefined) {
+        gfr = calculateEgfr(scr, 50, 'Male');
+      } else {
+        gfr = 90;
+      }
+    }
+    
+    return { month: monthDiff, actual: gfr };
+  });
+
+  const currentGfr = historicalData.length > 0 ? historicalData[historicalData.length - 1].actual : 90;
+  const decayRate = 0.03 + (risk_probability / 100) * 0.22;
+  
+  const currentStage = getCKDStage(currentGfr);
+  const projectedMonth12Gfr = currentGfr * (1 - decayRate);
+  const month12Stage = getCKDStage(projectedMonth12Gfr);
+  const hasBreach = month12Stage.numericStage > currentStage.numericStage;
+
+  if (historicalData.length > 0) {
+    historicalData[historicalData.length - 1].projected = currentGfr;
+  }
   
   const chartData = [
-    { month: 0,  actual: currentGfr, projected: currentGfr },
+    ...historicalData,
     { month: 3,  projected: currentGfr * (1 - decayRate * 0.25) },
     { month: 6,  projected: currentGfr * (1 - decayRate * 0.5) },
     { month: 9,  projected: currentGfr * (1 - decayRate * 0.75) },
-    { month: 12, projected: currentGfr * (1 - decayRate) },
+    { month: 12, projected: projectedMonth12Gfr },
   ]
 
   const cleanLabel = (feature) => feature
@@ -113,7 +169,7 @@ export default function InsightPage() {
                   <ReferenceArea y1={30} y2={60}  fill="rgba(255,170,0,0.05)" />
                   <ReferenceArea y1={0}  y2={30}  fill="rgba(255,107,138,0.05)" />
 
-                  <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false}>
+                  <XAxis dataKey="month" type="number" domain={['dataMin', 12]} stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false}>
                     <Label value="Months from Today" offset={-20} position="insideBottom" fill="rgba(255,255,255,0.4)" fontSize={10} />
                   </XAxis>
                   
@@ -175,6 +231,77 @@ export default function InsightPage() {
           </GlassCard>
 
         </div>
+
+        {/* ── Clinical Classification Matrix ─────────────────────────────── */}
+        <GlassCard className="mb-8">
+          <SectionLabel>Clinical Classification Matrix</SectionLabel>
+          <h2 className="text-xl font-bold text-on-surface mb-6">Current CKD Staging</h2>
+          
+          <div className="flex flex-col md:flex-row gap-4 items-stretch justify-between w-full">
+            {ALL_STAGES.map((st, i) => {
+              const isActive = st.numericStage === currentStage.numericStage;
+              const isPast = st.numericStage < currentStage.numericStage;
+              
+              return (
+                <motion.div
+                  key={st.stage}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.5, ease: "easeOut" }}
+                  className={`relative flex-1 rounded-2xl p-4 flex flex-col gap-2 border transition-all duration-300
+                    ${isActive ? 'bg-slate-900/60 opacity-100 z-10 scale-105' : 'bg-slate-900/20 opacity-40 hover:opacity-60'}
+                  `}
+                  style={{
+                    borderColor: isActive ? st.color : 'rgba(255,255,255,0.05)',
+                    boxShadow: isActive ? `0 0 20px -5px ${st.color}80, inset 0 0 10px -5px ${st.color}40` : 'none',
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {isActive && (
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: st.color }}></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3" style={{ backgroundColor: st.color }}></span>
+                      </span>
+                    )}
+                    <span className="text-sm font-bold tracking-tight" style={{ color: isActive ? st.color : '#94a3b8' }}>
+                      {st.stage}
+                    </span>
+                  </div>
+                  
+                  <div className="text-[11px] leading-tight text-outline flex-1">
+                    {st.desc}
+                  </div>
+                  
+                  {isActive && (
+                    <div className="mt-2 text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded-full w-max border"
+                      style={{ color: st.color, borderColor: `${st.color}40`, backgroundColor: `${st.color}10` }}>
+                      {st.threat}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {hasBreach && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="mt-8 rounded-2xl p-4 border flex items-center gap-4 bg-red-900/20 border-red-500/30"
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20 text-red-400">
+                <span className="material-symbols-outlined">warning</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-400 uppercase tracking-widest mb-0.5">Trajectory Stage Breach Alert</p>
+                <p className="text-sm text-red-200/80">
+                  Warning: Current velocity predicts evolution to <strong className="text-red-300">{month12Stage.stage}</strong> within 12 months if unmitigated.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </GlassCard>
 
         {/* ── Conclusion ────────────────────────────────────────────────── */}
         <div className="rounded-2xl px-8 py-6 flex flex-col gap-2"

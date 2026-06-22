@@ -4,6 +4,7 @@ import pandas as pd
 import shap
 import os
 import logging
+from services.biomarker_parser import calculate_egfr
 
 logger = logging.getLogger("nephora.predictor")
 
@@ -163,6 +164,25 @@ class CKDPredictor:
         else:
             final_prob = xgb_prob
 
+        # Calculate eGFR stream
+        visit_egfr_values = []
+        for v in visits:
+            gfr = v.get("eGFR") or v.get("GFR")
+            if gfr is None:
+                scr = v.get("Creatinine")
+                if scr is not None:
+                    gfr = calculate_egfr(float(scr), 50, "Male")
+                else:
+                    gfr = 90.0
+            visit_egfr_values.append(float(gfr))
+            
+        # Locate Inception Point
+        inception_visit_index = None
+        for i in range(len(visit_egfr_values)):
+            if all(val < 60 for val in visit_egfr_values[i:]):
+                inception_visit_index = i
+                break
+
         # SHAP explanation
         shap_values = self.explainer.shap_values(X_scaled)
         if isinstance(shap_values, list):
@@ -176,15 +196,23 @@ class CKDPredictor:
         }
 
         positive_shap = {k: v for k, v in shap_dict.items() if v > 0}
-        top_driver_feature = max(positive_shap, key=positive_shap.get) if positive_shap else None
-        top_driver = (
-            top_driver_feature
-            .replace('mean_val_', '')
-            .replace('max_val_', '')
-            .replace('ever_abnormal_', '')
-            .replace('creat_slope', 'Creatinine Slope')
-            if top_driver_feature else None
-        )
+        
+        sorted_positive = sorted(positive_shap.items(), key=lambda item: item[1], reverse=True)
+        unique_drivers = []
+        for feat, val in sorted_positive:
+            clean_feat = (
+                feat.replace('mean_val_', '')
+                .replace('max_val_', '')
+                .replace('ever_abnormal_', '')
+                .replace('creat_slope', 'Creatinine Slope')
+            )
+            if clean_feat not in unique_drivers:
+                unique_drivers.append(clean_feat)
+            if len(unique_drivers) == 3:
+                break
+                
+        top_3_biomarkers = unique_drivers
+        top_driver = top_3_biomarkers[0] if top_3_biomarkers else None
 
         result = {
             "risk_probability": round(final_prob * 100, 1),
@@ -193,6 +221,9 @@ class CKDPredictor:
             "shap_values": shap_dict,
             "feature_values": df.iloc[0].to_dict(),
             "top_driver": top_driver,
+            "top_3_biomarkers": top_3_biomarkers,
+            "inception_visit_index": inception_visit_index,
+            "visit_egfr_values": visit_egfr_values,
             "n_visits": len(visits),
             "creat_slope": df.iloc[0].get("creat_slope", 0.0),
         }
