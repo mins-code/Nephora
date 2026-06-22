@@ -9,6 +9,7 @@ import AnalysisPage from './pages/AnalysisPage'
 import ResultsPage  from './pages/ResultsPage'
 import InsightPage  from './pages/InsightPage'
 import ChatPage     from './pages/ChatPage'
+import SequenceMatrixPage from './pages/SequenceMatrixPage'
 
 /* Global background blobs — rendered once, behind everything */
 function Background() {
@@ -43,6 +44,7 @@ function AppShell() {
           <Route path="/results" element={<ResultsPage />}  />
           <Route path="/insight" element={<InsightPage />}  />
           <Route path="/ai"      element={<ChatPage />}       />
+          <Route path="/sequence-matrix" element={<SequenceMatrixPage />} />
         </Routes>
       </div>
     </>

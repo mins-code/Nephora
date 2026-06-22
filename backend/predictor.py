@@ -197,6 +197,9 @@ class CKDPredictor:
 
         positive_shap = {k: v for k, v in shap_dict.items() if v > 0}
         
+        TESTS = ['BUN', 'Bicarbonate', 'Calcium', 'Creatinine',
+                 'Glucose', 'Hemoglobin', 'Potassium', 'Sodium']
+        
         sorted_positive = sorted(positive_shap.items(), key=lambda item: item[1], reverse=True)
         unique_drivers = []
         for feat, val in sorted_positive:
@@ -206,7 +209,7 @@ class CKDPredictor:
                 .replace('ever_abnormal_', '')
                 .replace('creat_slope', 'Creatinine Slope')
             )
-            if clean_feat not in unique_drivers:
+            if clean_feat in TESTS and clean_feat not in unique_drivers:
                 unique_drivers.append(clean_feat)
             if len(unique_drivers) == 3:
                 break

@@ -242,6 +242,16 @@ function SectionLabel({ children }) {
   return <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-outline mb-1">{children}</p>
 }
 
+/* ── Date formatting helper ─────────────────────────────────────────────── */
+function formatDate(dateStr) {
+  if (!dateStr) return 'Unknown Date'
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`
+  }
+  return dateStr
+}
+
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 export default function ResultsPage() {
   const navigate = useNavigate()
@@ -452,6 +462,57 @@ export default function ResultsPage() {
           <p className="mt-4 text-[11px] text-outline uppercase tracking-widest font-bold">Powered by Nephora AI Explainer</p>
         </div>
 
+        {/* ── Neural Inception Sequence Tracker ──────────────────────────── */}
+        {visits.length > 1 && prediction.inception_visit_index !== undefined && (
+          <GlassCard className="mb-8">
+            <SectionLabel>Neural Inception Sequence Tracker</SectionLabel>
+            <h2 className="text-xl font-bold text-on-surface mb-2">Chronological Pathology</h2>
+            <p className="text-xs text-outline mb-8">
+              Deconstruct the longitudinal chain of visits to pinpoint the chronological origin of pathological progression.
+            </p>
+
+            <div className="flex items-center justify-between w-full mb-10 px-4 relative">
+              {/* Connecting line */}
+              <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-px bg-slate-700/50 z-0" />
+              
+              {visits.map((v, i) => {
+                const isInception = i === prediction.inception_visit_index;
+                return (
+                  <div key={i} className="flex flex-col items-center gap-3 bg-transparent z-10">
+                    <div className="bg-[#141c21] p-1 rounded-full">
+                      {isInception ? (
+                        <div className="relative flex h-8 w-8 items-center justify-center">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-60"></span>
+                          <span className="relative inline-flex rounded-full h-6 w-6 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] items-center justify-center border-2 border-[#141c21]">
+                            <span className="material-symbols-outlined text-[12px] text-white font-bold">warning</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-slate-600 bg-slate-800" />
+                      )}
+                    </div>
+                    <div className="text-[10px] text-outline font-medium tracking-wider uppercase text-center mt-1">
+                      Visit {i + 1}<br/>
+                      <span className="opacity-60">{formatDate(v.visitDate)}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex justify-end mt-4 border-t border-white/5 pt-6">
+              <Link to="/sequence-matrix" state={{ prediction, visits }}
+                className="group relative flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300"
+                style={{ background: 'rgba(255,255,255,0.05)', color: '#22d3ee', border: '1px solid rgba(34,211,238,0.2)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,211,238,0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                Deconstruct Sequence Matrix
+                <span className="material-symbols-outlined text-base transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </Link>
+            </div>
+          </GlassCard>
+        )}
+
         {/* ── Visit Timeline ─────────────────────────────────────────────── */}
         {visits.length > 0 && (
           <GlassCard className="mb-6">
@@ -464,7 +525,7 @@ export default function ResultsPage() {
                     {i < visits.length - 1 && <div className="w-px flex-1 mt-1" style={{ background: 'rgba(255,255,255,0.08)', minHeight: 24 }} />}
                   </div>
                   <div className="flex-1 pb-4">
-                    <div className="text-xs font-semibold mb-2" style={{ color: cfg.color }}>Visit {i + 1} — {visitDate}</div>
+                    <div className="text-xs font-semibold mb-2" style={{ color: cfg.color }}>Visit {i + 1} — {formatDate(visitDate)}</div>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(extractedData?.found || {}).map(([b, info]) => (
                         <span key={b} className="text-[11px] px-2.5 py-1 rounded-lg"
